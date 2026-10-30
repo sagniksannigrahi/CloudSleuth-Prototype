@@ -1,0 +1,23 @@
+[project]
+name = "CloudSleuth-Zeroth-Prototype"
+version = "0.0.1"
+description = "Early prototype (zeroth review) of CloudSleuth: evidence-based root-cause analysis for microservices"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Sagnik Sannigrahi" },
+  { name = "Malik Inam Ul Haq" },
+]
+# The simulator, diagnosis core and evaluation use only the Python standard library.
+dependencies = []
+
+[project.optional-dependencies]
+viewer = ["fastapi>=0.110", "uvicorn>=0.29"]
+dev = ["pytest>=8", "fastapi>=0.110", "uvicorn>=0.29", "httpx>=0.27"]
+
+[tool.setuptools]
+packages = ["cloudsleuth_zeroth", "cloudsleuth_zeroth.core", "cloudsleuth_zeroth.simulator",
+            "cloudsleuth_zeroth.evaluation", "cloudsleuth_zeroth.viewer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

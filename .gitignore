@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
+.DS_Store
+# Simulator data is generated on demand (make data)
+data/simulator/
+results/
+# Fault-lab runtime state
+faultlab/.state/
