@@ -5,6 +5,8 @@ metrics, traces, logs, recent changes (deploy/config) and database stats.
 The fault (if any) starts somewhere between minute 2:10 and 3:00.
 
 Default dataset: 16 fault kinds x 8 cases = 128 fault cases + 16 normal = 144.
+2 of the 8 cases per kind are MILD (weaker fault). Noise everywhere: jitter,
+one-off spikes, missing points, scrape gaps, lost traces, unrelated changes.
 Telemetry goes to  <out>/telemetry/,  true answers to  <out>/labels/  (hashed).
 
 Run:  python -m cloudsleuth_zeroth.simulator.generate --out data/simulator
@@ -151,7 +153,8 @@ def simulate_case(case_id, kind, rng, index):
     """Return (telemetry, label) for one case. kind=None means a normal case."""
     st0 = base_state(rng)
     start = rng.randint(26, 36)
-    fault = make_fault(kind, rng, index) if kind else None
+    mild = bool(kind) and index % 4 == 3            # 2 of every 8 cases per kind
+    fault = make_fault(kind, rng, index, mild) if kind else None
     metrics = {s: {k: [] for k in SERVICE_METRICS} for s in SERVICES}
     db = {k: [] for k in DB_METRICS}
     traces, logs = [], []
@@ -212,6 +215,7 @@ def simulate_case(case_id, kind, rng, index):
         "case_id": case_id, "dataset": "simulator",
         "fault_kind": kind or "normal", "fault_group": group_of(kind) if kind else "normal",
         "root_causes": fault["root_causes"] if fault else [],
+        "severity": ("mild" if mild else "strong") if fault else None,
         "fault_start_s": start * INTERVAL_S if fault else None,
         "details": fault,
     }

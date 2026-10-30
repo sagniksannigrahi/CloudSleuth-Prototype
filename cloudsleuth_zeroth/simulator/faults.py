@@ -12,27 +12,44 @@ HAS_CALLER = ["orders", "inventory", "payments"]            # someone calls them
 HAS_CALLEE = [s for s in SERVICES if CALLS[s]]              # they call someone
 SIMPLE_SERVICE_FAULTS = ["slow_service", "cpu_hog", "exception_burst"]
 
+# Strength range per kind: (strong, mild). Real faults are not always loud,
+# so 1 in 4 fault cases uses the mild range.
+STRENGTH = {
+    "db_lock":         ((800, 2500), (60, 150)),     # extra lock wait (ms)
+    "db_slow_query":   ((20, 40), (2, 4)),           # query time multiplier
+    "slow_service":    ((300, 900), (40, 100)),      # extra own time (ms)
+    "latency_spikes":  ((500, 1500), (60, 150)),     # extra own time in bursts (ms)
+    "cpu_hog":         ((0.93, 0.99), (0.55, 0.7)),  # CPU use (0..1)
+    "memory_leak":     ((4, 8), (1, 2)),             # MB leaked per step
+    "exception_burst": ((0.2, 0.5), (0.04, 0.08)),   # error chance
+    "bad_deploy":      ((0.1, 0.35), (0.03, 0.06)),  # error chance
+    "bad_config":      ((0.3, 0.6), (0.8, 0.95)),    # new timeout / normal callee time
+    "pool_misconfig":  ((150, 500), (30, 60)),       # wait for a DB connection (ms)
+    "network_delay":   ((150, 500), (30, 60)),       # extra network delay (ms)
+    "packet_loss":     ((0.25, 0.4), (0.05, 0.1)),   # chance of a retransmit
+}
 
-def make_fault(kind, rng, index):
+
+def make_fault(kind, rng, index, mild=False):
     """Return a fault description: kind, target, strength, true root causes.
 
     `index` (0..7) rotates targets so every service gets used.
     """
+    lo, hi = STRENGTH.get(kind, ((0, 0), (0, 0)))[1 if mild else 0]
     pick = lambda options: options[index % len(options)]  # noqa: E731
     if kind in ("db_lock", "db_slow_query"):
         caller = pick(["inventory", "payments", "orders", "worker"])
         return {"kind": kind, "target": DATABASE, "caller": caller,
-                "strength": rng.uniform(800, 2500) if kind == "db_lock" else rng.uniform(20, 40),
-                "root_causes": [DATABASE]}
+                "strength": rng.uniform(lo, hi), "root_causes": [DATABASE]}
     if kind == "multi_service":
         a, b = rng.sample(SERVICES[:4], 2)
-        parts = [make_fault(rng.choice(SIMPLE_SERVICE_FAULTS), rng, 0) for _ in range(2)]
+        parts = [make_fault(rng.choice(SIMPLE_SERVICE_FAULTS), rng, 0, mild) for _ in range(2)]
         parts[0].update(target=a, root_causes=[a])
         parts[1].update(target=b, root_causes=[b])
         return {"kind": kind, "parts": parts, "root_causes": [a, b]}
     if kind == "multi_db_and_service":
-        db = make_fault("db_lock", rng, index)
-        svc = make_fault(rng.choice(SIMPLE_SERVICE_FAULTS), rng, index)
+        db = make_fault("db_lock", rng, index, mild)
+        svc = make_fault(rng.choice(SIMPLE_SERVICE_FAULTS), rng, index, mild)
         svc.update(target=pick(["gateway", "payments", "orders"]))
         svc["root_causes"] = [svc["target"]]
         return {"kind": kind, "parts": [db, svc], "root_causes": [DATABASE, svc["target"]]}
@@ -45,19 +62,7 @@ def make_fault(kind, rng, index):
         target = pick(HAS_CALLER)
     else:
         target = pick(SERVICES)
-    strength = {
-        "slow_service": rng.uniform(300, 900),
-        "latency_spikes": rng.uniform(500, 1500),
-        "cpu_hog": rng.uniform(0.93, 0.99),
-        "memory_leak": rng.uniform(4, 8),
-        "exception_burst": rng.uniform(0.2, 0.5),
-        "bad_deploy": rng.uniform(0.1, 0.35),
-        "bad_config": rng.uniform(0.3, 0.6),
-        "pool_misconfig": rng.uniform(150, 500),
-        "network_delay": rng.uniform(150, 500),
-        "packet_loss": rng.uniform(0.25, 0.4),
-    }.get(kind, 0.0)
-    return {"kind": kind, "target": target, "strength": strength, "root_causes": [target]}
+    return {"kind": kind, "target": target, "strength": rng.uniform(lo, hi), "root_causes": [target]}
 
 
 def apply_fault(fault, st, k):
@@ -70,9 +75,9 @@ def apply_fault(fault, st, k):
         c = fault["caller"]
         st.db_ms[c] += x
         st.db_err[c] = 0.03                     # some statement timeouts
-        st.db_stats["lock_waits"] += 4 + x / 250
-        st.db_stats["active_connections"] += 8
-        st.db_stats["mean_query_ms"] *= 3
+        st.db_stats["lock_waits"] += 1 + x / 250
+        st.db_stats["active_connections"] += 2 + x / 250
+        st.db_stats["mean_query_ms"] *= 1 + x / 1000
     elif kind == "db_slow_query":
         c = fault["caller"]
         st.db_ms[c] *= x
@@ -86,7 +91,7 @@ def apply_fault(fault, st, k):
             st.own_ms[s] += x
     elif kind == "cpu_hog":
         st.cpu[s] = x
-        st.own_ms[s] *= 4
+        st.own_ms[s] *= 1 + 4 * (x - 0.25)       # less CPU left for requests
     elif kind == "memory_leak":
         st.mem_mb[s] += x * k
         st.own_ms[s] *= 1 + 0.02 * k
