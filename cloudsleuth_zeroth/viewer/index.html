@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CloudSleuth-Zeroth-Prototype</title>
+<style>
+  body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #666; margin-top: 0; }
+  fieldset { border: 1px solid #ccc; padding: 12px; }
+  label { margin-right: 14px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; }
+  th { background: #f4f4f4; }
+  tr.top td { font-weight: bold; }
+  .support li { color: #155724; }
+  .contradict li { color: #8a1c1c; }
+  .note { background: #fff8e1; border: 1px solid #f0d78c; padding: 6px 10px; }
+  .box { border: 1px solid #ccc; padding: 10px; margin-top: 12px; }
+  footer { margin-top: 30px; color: #888; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>CloudSleuth-Zeroth-Prototype</h1>
+<p class="sub">Evidence-based root-cause analysis for microservices, early prototype (zeroth review)</p>
+
+<fieldset>
+  <label>Dataset <select id="dataset"></select></label>
+  <label>Case <select id="case"></select></label>
+  <label>Method
+    <select id="method">
+      <option value="D">D: evidence rules</option>
+      <option value="loudest">baseline: loudest alert</option>
+      <option value="random">baseline: random</option>
+    </select>
+  </label>
+  <label><input type="checkbox" id="nodb"> switch off database evidence</label>
+  <button id="run">Run diagnosis</button>
+</fieldset>
+
+<div id="out"></div>
+
+<footer>Simple viewer only. Planned: React dashboard, calibrated confidence and "not sure", learned ranker (method G).</footer>
+
+<script>
+let allCases = {};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+async function loadCases() {
+  allCases = await (await fetch('/api/cases')).json();
+  $('dataset').innerHTML = Object.keys(allCases)
+    .map(d => `<option value="${d}">${d} (${allCases[d].length} cases)</option>`).join('');
+  fillCases();
+}
+function fillCases() {
+  $('case').innerHTML = (allCases[$('dataset').value] || []).map(c => `<option>${c}</option>`).join('');
+}
+
+async function run() {
+  const q = new URLSearchParams({dataset: $('dataset').value, case: $('case').value,
+                                 method: $('method').value, no_db: $('nodb').checked});
+  const r = await (await fetch('/api/diagnose?' + q)).json();
+  let h = `<h2>Case ${esc(r.case_id)}: method ${esc(r.method)}, database evidence ${r.use_db_evidence ? 'ON' : 'OFF'}</h2>`;
+  if (!r.incident) {
+    h += `<p><b>${esc(r.summary)}</b></p>`;
+  } else {
+    if (r.method === 'D') {
+      h += `<p>Top cause: <b>${esc(r.top_cause)}</b> &nbsp; Fault type: <b>${esc(r.fault_type)}</b> (${esc(r.fault_group)})</p>`;
+      h += `<p class="note">Confidence: raw score ${r.raw_score.toFixed(2)}, ${esc(r.confidence_note)}</p>`;
+    }
+    h += '<table><tr><th>#</th><th>Candidate</th><th>Raw score</th></tr>';
+    r.ranking.forEach((x, i) => {
+      h += `<tr class="${i === 0 ? 'top' : ''}"><td>${i + 1}</td><td>${esc(x.node)}</td><td>${x.raw_score ?? '-'}</td></tr>`;
+    });
+    h += '</table>';
+    if (r.evidence_report) {
+      const ev = r.evidence_report;
+      const li = xs => xs.length ? xs.map(e => `<li>[${e.weight}] ${esc(e.text)}</li>`).join('') : '<li>(none)</li>';
+      h += `<div class="box"><b>Evidence report for ${esc(ev.cause)}</b>
+            <p>Supporting:</p><ul class="support">${li(ev.support)}</ul>
+            <p>Contradicting:</p><ul class="contradict">${li(ev.contradict)}</ul></div>`;
+    }
+  }
+  h += `<p><button id="reveal">Reveal true answer</button> <span id="truth"></span></p>`;
+  $('out').innerHTML = h;
+  $('reveal').onclick = async () => {
+    const t = await (await fetch('/api/truth?' + new URLSearchParams({dataset: $('dataset').value, case: $('case').value}))).json();
+    $('truth').innerHTML = `True answer: <b>${esc(t.fault_kind)}</b> &rarr; ${esc(JSON.stringify(t.root_causes))} (label file, SHA-256 checked)`;
+  };
+}
+
+$('dataset').onchange = fillCases;
+$('run').onclick = run;
+loadCases();
+</script>
+</body>
+</html>

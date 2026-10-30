@@ -21,3 +21,4 @@ packages = ["cloudsleuth_zeroth", "cloudsleuth_zeroth.core", "cloudsleuth_zeroth
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["ignore:Using `httpx`"]
