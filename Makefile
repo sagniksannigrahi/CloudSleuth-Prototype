@@ -65,7 +65,7 @@ viewer: $(VPY)
 
 up:
 	$(COMPOSE) up -d --build
-	@echo "Jaeger: http://localhost:16686   Prometheus: http://localhost:9090   Gateway: http://localhost:8080"
+	@echo "Jaeger: http://localhost:16686   Prometheus: http://localhost:9090   Gateway: http://localhost:18080"
 	@echo "Wait ~2 minutes for normal traffic to build up before injecting a fault."
 
 down:

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+psycopg2-binary
+psutil
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-requests

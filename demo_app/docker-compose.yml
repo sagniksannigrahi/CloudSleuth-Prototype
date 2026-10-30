@@ -1,0 +1,80 @@
+# CloudSleuth-Zeroth-Prototype: live demo app (dataset 2)
+#   gateway -> orders -> inventory, payments ; orders -> (jobs table) -> worker
+#   + PostgreSQL, a load generator, and the observability stack.
+# All paths are relative to this file, so a space in the folder path is fine.
+name: cloudsleuth-zeroth-prototype
+
+x-service: &service
+  build: ./services
+  image: cloudsleuth-zeroth-prototype-service
+  restart: always                      # a crashed service comes back (crash-loop fault)
+  cap_add: [NET_ADMIN]                 # lets the fault lab add network delay with `tc`
+  depends_on:
+    postgres: { condition: service_healthy }
+    otel-collector: { condition: service_started }
+
+x-env: &env
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  DATABASE_URL: postgresql://cloudsleuth:cloudsleuth@postgres:5432/shop
+
+services:
+  gateway:
+    <<: *service
+    environment: { <<: *env, SERVICE_NAME: gateway }
+    ports: ["127.0.0.1:18080:8000"]
+  orders:
+    <<: *service
+    environment: { <<: *env, SERVICE_NAME: orders }
+    ports: ["127.0.0.1:18081:8000"]
+  inventory:
+    <<: *service
+    environment: { <<: *env, SERVICE_NAME: inventory }
+    ports: ["127.0.0.1:18082:8000"]
+  payments:
+    <<: *service
+    environment: { <<: *env, SERVICE_NAME: payments }
+    ports: ["127.0.0.1:18083:8000"]
+  worker:
+    <<: *service
+    environment: { <<: *env, SERVICE_NAME: worker }
+    ports: ["127.0.0.1:18084:8000"]
+  loadgen:
+    image: cloudsleuth-zeroth-prototype-service
+    restart: always
+    command: ["python", "loadgen.py"]
+    environment: { TARGET: "http://gateway:8000", RPS: "5" }
+    depends_on: [gateway]
+
+  postgres:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "max_connections=300"]
+    environment: { POSTGRES_USER: cloudsleuth, POSTGRES_PASSWORD: cloudsleuth, POSTGRES_DB: shop }
+    volumes: ["./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloudsleuth -d shop"]
+      interval: 2s
+      retries: 30
+  postgres-exporter:                   # DB stats (locks, connections, transactions)
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    command: ["--extend.query-path=/etc/queries.yaml"]
+    environment:
+      DATA_SOURCE_NAME: postgresql://cloudsleuth:cloudsleuth@postgres:5432/shop?sslmode=disable
+    volumes: ["./config/postgres-exporter-queries.yaml:/etc/queries.yaml:ro"]
+    depends_on: { postgres: { condition: service_healthy } }
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.164.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./config/otel-collector.yaml:/etc/otelcol/config.yaml:ro"]
+    depends_on: [jaeger, loki]
+  prometheus:                          # metrics, 5 s scrape
+    image: prom/prometheus:v3.15.1
+    volumes: ["./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+    ports: ["127.0.0.1:9090:9090"]
+  jaeger:                              # traces
+    image: jaegertracing/jaeger:2.22.0
+    ports: ["127.0.0.1:16686:16686"]
+  loki:                                # logs
+    image: grafana/loki:3.7.9
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports: ["127.0.0.1:3100:3100"]
