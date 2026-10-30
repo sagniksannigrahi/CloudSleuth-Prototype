@@ -57,12 +57,11 @@ def score_dataset(dataset_dir):
             if label.get("severity") == "mild":
                 m["mild_cases"] += 1
                 m["mild_top1"] += hit1
-            if cfg["method"] == "D" and label["fault_group"] != "multiple" and r["incident"]:
+            if cfg["method"] == "D" and label["fault_group"] != "multiple":   # fault-type guess
                 m["type_cases"] += 1
-                m["type_exact"] += int(r["fault_type"] == label["fault_kind"])
-                m["type_group"] += int(r["fault_group"] == label["fault_group"])
-            elif cfg["method"] == "D" and label["fault_group"] != "multiple":
-                m["type_cases"] += 1
+                if r["incident"]:
+                    m["type_exact"] += int(r["fault_type"] == label["fault_kind"])
+                    m["type_group"] += int(r["fault_group"] == label["fault_group"])
         out["methods"][name] = m
     return out
 

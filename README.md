@@ -74,6 +74,8 @@ make diagnose-nodb           # same case, DB evidence OFF  -> blames the wrong s
 make down                    # stop and remove everything
 ```
 
+`make live-story` runs the DB-lock story on the recorded live db_lock case, and
+`make diagnose CASE=live-...` diagnoses any recorded case (`make live-cases` lists them).
 Other live faults: `make faults` lists them (`slow_service`, `service_crash`, `cpu_hog`, `bad_config`,
 `network_delay`, and `normal` for a no-fault snapshot). `make live-eval` scores all recorded live cases.
 Recorded live cases are kept in `data/demo_app/` (committed), so they can be diagnosed even

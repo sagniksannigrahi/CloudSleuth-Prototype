@@ -10,7 +10,7 @@ LIVE    := data/demo_app
 NAME    ?= db_lock
 DURATION ?= 120
 
-.PHONY: help check-python data eval story demo venv test viewer up down fault faults diagnose diagnose-nodb live-eval ps logs clean
+.PHONY: help check-python data eval story demo venv test viewer up down fault faults diagnose diagnose-nodb live-story live-cases live-eval ps logs clean
 
 help:
 	@echo "CloudSleuth-Zeroth-Prototype"
@@ -27,7 +27,9 @@ help:
 	@echo "  make up             start 6 services + Postgres + OTel Collector, Prometheus, Jaeger, Loki"
 	@echo "  make fault NAME=db_lock [DURATION=120]   inject a fault, record a snapshot, save the true answer"
 	@echo "  make faults         list the live faults"
-	@echo "  make diagnose       diagnose the newest recorded live case (diagnose-nodb: without DB evidence)"
+	@echo "  make diagnose [CASE=live-...]   diagnose a recorded live case, newest by default (diagnose-nodb: DB evidence off)"
+	@echo "  make live-story     the DB-lock story on the recorded live db_lock case"
+	@echo "  make live-cases     list recorded live cases;  make live-eval  scores them"
 	@echo "  make down           stop everything"
 
 check-python:
@@ -83,11 +85,20 @@ faults:
 fault: check-python
 	$(PYTHON) -m faultlab.fault_lab inject $(NAME) --duration $(DURATION)
 
+# CASE=live-... picks a recorded case; default is the newest one.
+CASE_ARG = $(if $(CASE),"$(LIVE)/telemetry/$(CASE).json",--latest "$(LIVE)")
+
 diagnose: check-python
-	$(PYTHON) -m cloudsleuth_zeroth.core.diagnose --latest "$(LIVE)"
+	$(PYTHON) -m cloudsleuth_zeroth.core.diagnose $(CASE_ARG)
 
 diagnose-nodb: check-python
-	$(PYTHON) -m cloudsleuth_zeroth.core.diagnose --latest "$(LIVE)" --no-db-evidence
+	$(PYTHON) -m cloudsleuth_zeroth.core.diagnose $(CASE_ARG) --no-db-evidence
+
+live-story: check-python
+	$(PYTHON) -m cloudsleuth_zeroth.evaluation.story --dataset "$(LIVE)"
+
+live-cases:
+	@ls -1 "$(LIVE)/telemetry" 2>/dev/null | sed 's/.json$$//' || echo "no live cases yet"
 
 live-eval: check-python
 	$(PYTHON) -m cloudsleuth_zeroth.evaluation.evaluate "$(LIVE)"

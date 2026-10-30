@@ -6,7 +6,7 @@
 cd "$HOME/Downloads/VS Projects/CloudSleuth-Zeroth-Prototype"
 make demo                    # check the offline demo works (takes a few seconds)
 make up                      # only if Docker Desktop is running; wait 2+ minutes
-make fault NAME=db_lock      # optional: a fresh live case (~2.5 min), so 'make diagnose' is instant later
+make fault NAME=db_lock      # optional: a fresh live DB-lock case (~2.5 min)
 ```
 
 Make the terminal font big. Keep `README.md` and `ARCHITECTURE.md` open in the editor.
@@ -68,8 +68,8 @@ make story
 ```bash
 make ps                       # show the containers: 6 services, Postgres, collector, Prometheus, Jaeger, Loki
 make faults                   # the 6 live faults (others are TODO)
-make diagnose                 # newest live case, DB evidence ON
-make diagnose-nodb            # same case, DB evidence OFF
+make live-cases               # recorded live cases (one per fault run)
+make live-story               # live DB-lock case: DB evidence OFF, then ON, then the true answer
 ```
 
 **Say:** "This is real traffic through real services, instrumented with OpenTelemetry. The fault lab
@@ -79,7 +79,9 @@ OFF blames inventory, ON finds postgres."
 
 Optional: open Jaeger at http://localhost:16686 and show a slow trace.
 
-(If there is time and the guide asks for a fresh fault: `make fault NAME=slow_service` takes ~2.5 minutes.)
+Any other recorded case: `make diagnose CASE=live-...` (and `make diagnose-nodb CASE=...`).
+`make live-eval` prints the table for the live cases.
+(If the guide asks for a fresh fault: `make fault NAME=slow_service`, ~2.5 minutes, then `make diagnose`.)
 
 ## 5. Viewer + what is planned (4:00 – 5:00)
 
