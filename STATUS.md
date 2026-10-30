@@ -77,4 +77,10 @@ Status as of the Zeroth Review. **BUILT** = working in this repo. **PLANNED** = 
   rules while looking at the simulator.
 - Method D weights are hand-set; the raw score is not a probability.
 - Live dataset is small (one case per fault run) and uses only 6 of 16 fault kinds.
+- One fault-type rule was changed after seeing a live case: in the live cpu_hog run the starved
+  service also answered late (looked like network delay), so CPU/memory evidence is now checked
+  before network evidence (`core/ranking.py`, `guess_fault_type`).
+- The restart signal (`core/anomaly.py`, `detect_restarts`) was added after the live
+  service_crash run was first reported as "normal": Docker restarted the service in ~0.5 s,
+  so no metric stayed unusual for 3 readings; only the logs showed the crash loop.
 - Trace sampling in the recorder is simple (a few traces per 20 s).

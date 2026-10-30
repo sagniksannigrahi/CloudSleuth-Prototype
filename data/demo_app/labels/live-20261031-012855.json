@@ -1,0 +1,15 @@
+{
+  "case_id": "live-20261031-012855",
+  "dataset": "demo_app",
+  "details": {
+    "what": "a transaction holds an ACCESS EXCLUSIVE lock on the inventory table (the inventory service's queries wait on it)"
+  },
+  "duration_s": 120,
+  "fault_group": "database",
+  "fault_kind": "db_lock",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:28:55",
+  "root_causes": [
+    "postgres"
+  ]
+}

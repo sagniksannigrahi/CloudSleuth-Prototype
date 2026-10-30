@@ -1,0 +1,15 @@
+{
+  "case_id": "live-20261031-015042",
+  "dataset": "demo_app",
+  "details": {
+    "what": "payments crashes (process exits) every ~20 s and Docker restarts it"
+  },
+  "duration_s": 120,
+  "fault_group": "availability",
+  "fault_kind": "service_crash",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:50:42",
+  "root_causes": [
+    "payments"
+  ]
+}

@@ -8,6 +8,8 @@ For each metric series:
   * the SERIES is anomalous only if it stays unusual for MIN_RUN readings in a
     row, so a single spike is ignored.
 Missing points (None) are skipped: they neither break nor extend a run.
+Two extra signals: a service that stops reporting all its metrics, and a
+service that keeps restarting (from its logs).
 """
 
 from dataclasses import dataclass
@@ -114,6 +116,19 @@ def detect_missing(series, node):
     return None
 
 
+def detect_restarts(logs, node, n_points, interval_s):
+    """A service that restarts 2+ times after the reference period (from its logs).
+    Fast crash loops can be too short to move any metric for 3 readings."""
+    start_s = baseline_end(n_points) * interval_s
+    restarts = lambda e: e["service"] == node and "service starting" in e["msg"]  # noqa: E731
+    before = [e for e in logs if restarts(e) and e["t"] < start_s]
+    after = [e for e in logs if restarts(e) and e["t"] >= start_s]
+    if len(after) >= 2 and len(after) > len(before):
+        return Anomaly(node, "restarts", int(after[0]["t"] // interval_s), 0.0, 1.0,
+                       float(len(before)), float(len(after)))
+    return None
+
+
 def scan(snapshot):
     """Run detection on every metric of every node. Returns a list of Anomaly."""
     found = []
@@ -130,4 +145,7 @@ def scan(snapshot):
             m = detect_missing(present, node)
             if m:
                 found.append(m)
+        r = detect_restarts(snapshot["logs"], node, snapshot["steps"], snapshot["interval_s"])
+        if r:
+            found.append(r)
     return found

@@ -1,0 +1,15 @@
+{
+  "case_id": "live-20261031-013755",
+  "dataset": "demo_app",
+  "details": {
+    "what": "two busy threads burn CPU inside inventory"
+  },
+  "duration_s": 120,
+  "fault_group": "resources",
+  "fault_kind": "cpu_hog",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:37:55",
+  "root_causes": [
+    "inventory"
+  ]
+}

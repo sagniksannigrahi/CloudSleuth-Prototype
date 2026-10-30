@@ -1,0 +1,15 @@
+{
+  "case_id": "live-20261031-013340",
+  "dataset": "demo_app",
+  "details": {
+    "what": "payments' own code sleeps 600 ms per request"
+  },
+  "duration_s": 120,
+  "fault_group": "delay",
+  "fault_kind": "slow_service",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:33:40",
+  "root_causes": [
+    "payments"
+  ]
+}

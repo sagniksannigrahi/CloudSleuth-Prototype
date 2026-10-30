@@ -77,6 +77,8 @@ def collect(node, view, anomalies, attr, attr_all):
     # --- metrics (persistent anomalies only)
     for a in anomalies:
         w = METRIC_WEIGHT.get(a.metric, 0.5)
+        if a.metric == "restarts":
+            continue                            # counted below, from the logs
         if a.metric == "missing_data":
             sup(w, "missing_data", f"{node} stopped reporting metrics ({a.fraction:.0%} of readings "
                 f"missing from t={a.onset * iv}s)")
@@ -122,8 +124,10 @@ def guess_fault_type(node, view, evidence):
     tags = {e.tag for e in evidence if e.side == "support"}
     if node == view["database"]:
         return "db_lock" if "metric:lock_waits" in tags else "db_slow_query"
+    if "restart" in tags:
+        return "service_crash"
     if "unreachable" in tags or "missing_data" in tags:
-        return "service_crash" if "restart" in tags else "service_down"
+        return "service_down"
     if "gave_up" in tags:
         return "bad_config"
     if "change:config" in tags and "own_time" in tags:
@@ -132,12 +136,14 @@ def guess_fault_type(node, view, evidence):
         return "bad_config"
     if "errors_here" in tags or {"error_logs", "metric:error_rate"} <= tags:
         return "bad_deploy" if "change:deploy" in tags else "exception_burst"
-    if "net_gap" in tags or "net_gap_irregular" in tags:
-        return "packet_loss" if "net_gap_irregular" in tags else "network_delay"
+    # CPU / memory before network: a starved process also answers late, which
+    # looks like network delay; a real network delay does not raise CPU.
     if "metric:memory_mb" in tags:
         return "memory_leak"
     if "metric:cpu" in tags:
         return "cpu_hog"
+    if "net_gap" in tags or "net_gap_irregular" in tags:
+        return "packet_loss" if "net_gap_irregular" in tags else "network_delay"
     if "own_time" in tags:
         lat = [e for e in evidence if e.tag == "metric:latency_p95_ms"]
         bursty = view.get("latency_fraction", {}).get(node, 1.0) < 0.75

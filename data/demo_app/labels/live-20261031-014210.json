@@ -1,0 +1,15 @@
+{
+  "case_id": "live-20261031-014210",
+  "dataset": "demo_app",
+  "details": {
+    "what": "config change on orders: payments_timeout_s 2.0 -> 0.002 (2 ms, too short)"
+  },
+  "duration_s": 120,
+  "fault_group": "settings",
+  "fault_kind": "bad_config",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:42:10",
+  "root_causes": [
+    "orders"
+  ]
+}

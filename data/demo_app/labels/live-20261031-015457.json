@@ -1,0 +1,13 @@
+{
+  "case_id": "live-20261031-015457",
+  "dataset": "demo_app",
+  "details": {
+    "what": "nothing is broken (a normal snapshot, to check for false alarms)"
+  },
+  "duration_s": 120,
+  "fault_group": "normal",
+  "fault_kind": "normal",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:54:57",
+  "root_causes": []
+}

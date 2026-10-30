@@ -79,7 +79,7 @@ Each service has `/admin/...` endpoints that only the fault lab uses.
 
 | Step | File | What it does |
 |---|---|---|
-| 1 Anomaly detection | `anomaly.py` | First third of the window = normal reference. z = (x - median) / MAD-spread. A series is anomalous only if it stays past z = 4 for **3 readings in a row** (a single spike is ignored). A service that stops reporting *all* its metrics is flagged too. |
+| 1 Anomaly detection | `anomaly.py` | First third of the window = normal reference. z = (x - median) / MAD-spread. A series is anomalous only if it stays past z = 4 for **3 readings in a row** (a single spike is ignored). A service that stops reporting *all* its metrics, or restarts 2+ times (from logs), is flagged too. |
 | 2 Snapshot | `snapshot.py` | Prepares the data; `--no-db-evidence` drops DB stats, removes the DB as a candidate and treats DB spans as the caller's own work. Splits into a "before" and an "incident" window around the onset. |
 | 3 Trace attribution | `attribution.py` | For each span: own time = duration - time covered by children. DB spans -> the database's own time. A client span's own time = network gap -> charged to the callee. Finds where errors START, calls that got no answer, and callers that gave up although the callee was fine. |
 | 4 Ranking (method D) | `ranking.py` | For each candidate, collects supporting / contradicting evidence with hand-set weights. Raw score = support - contradict. Guesses the fault type from the evidence of the top cause. |

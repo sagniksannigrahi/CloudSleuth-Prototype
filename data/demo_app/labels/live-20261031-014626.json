@@ -1,0 +1,15 @@
+{
+  "case_id": "live-20261031-014626",
+  "dataset": "demo_app",
+  "details": {
+    "what": "tc netem adds 300 ms (+-50 ms) delay to every response leaving inventory"
+  },
+  "duration_s": 121,
+  "fault_group": "network",
+  "fault_kind": "network_delay",
+  "fault_start_s": 120,
+  "injected_at": "2026-10-31T01:46:26",
+  "root_causes": [
+    "inventory"
+  ]
+}
