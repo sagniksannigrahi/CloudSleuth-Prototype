@@ -56,7 +56,10 @@ services:
       retries: 30
   postgres-exporter:                   # DB stats (locks, connections, transactions)
     image: prometheuscommunity/postgres-exporter:v0.20.1
-    command: ["--extend.query-path=/etc/queries.yaml"]
+    # The per-table collectors wait on table locks, which made ALL DB stats vanish
+    # during the db_lock fault (found in our first live test), so they are off.
+    command: ["--extend.query-path=/etc/queries.yaml", "--no-collector.stat_user_tables",
+              "--no-collector.statio_user_tables"]
     environment:
       DATA_SOURCE_NAME: postgresql://cloudsleuth:cloudsleuth@postgres:5432/shop?sslmode=disable
     volumes: ["./config/postgres-exporter-queries.yaml:/etc/queries.yaml:ro"]

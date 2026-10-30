@@ -21,6 +21,7 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from pathlib import Path
 
 from cloudsleuth_zeroth import case_io, labels
 from cloudsleuth_zeroth.faults import FAULT_KINDS, group_of
@@ -31,6 +32,7 @@ LIVE_DATASET = "data/demo_app"
 COMPOSE = ["docker", "compose", "-f", "demo_app/docker-compose.yml"]
 PORTS = {"gateway": 18080, "orders": 18081, "inventory": 18082, "payments": 18083, "worker": 18084}
 BASELINE_S = 120
+STATE_FILE = Path("faultlab/.state/last_fault_end")   # when the previous fault ended
 
 
 # ---------------------------------------------------------------- helpers
@@ -132,6 +134,14 @@ def check_ready():
     if not ok:
         print(f"[fault lab] need {BASELINE_S} s of normal traffic first; waiting ...", flush=True)
         time.sleep(BASELINE_S)
+    # The 2 minutes before a fault are its "normal" reference, so they must not
+    # contain the previous fault.
+    if STATE_FILE.exists():
+        wait = float(STATE_FILE.read_text()) + BASELINE_S + 15 - time.time()
+        if wait > 0:
+            print(f"[fault lab] waiting {wait:.0f} s so the previous fault is out of the reference window ...",
+                  flush=True)
+            time.sleep(wait)
     for s in PORTS:                                   # make sure nothing is left over
         post(s, "/admin/reset", {})
 
@@ -148,7 +158,7 @@ def inject(name, duration):
         while time.time() - t0 < duration:
             time.sleep(1)
             left = duration - (time.time() - t0)
-            if int(left) % 15 == 0:
+            if int(left) % 15 == 0 and left >= 1:
                 print(f"[fault lab]   fault active, {left:.0f} s left", flush=True)
             every = fault.get("repeat_every_s")
             if every and time.time() - last >= every and left > 5:
@@ -162,6 +172,8 @@ def inject(name, duration):
     finally:
         t_end = time.time()
         fault["stop"]()
+        STATE_FILE.parent.mkdir(exist_ok=True)
+        STATE_FILE.write_text(str(time.time()))
         print(f"[fault lab] {datetime.now():%H:%M:%S} fault removed", flush=True)
 
     print("[fault lab] waiting 15 s for the last telemetry to arrive ...", flush=True)

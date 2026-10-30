@@ -1,9 +1,10 @@
-fastapi
-uvicorn
-requests
-psycopg2-binary
-psutil
-opentelemetry-sdk
-opentelemetry-exporter-otlp-proto-http
-opentelemetry-instrumentation-fastapi
-opentelemetry-instrumentation-requests
+# Pinned to the versions tested on 2026-10-31.
+fastapi==0.162.0
+uvicorn==0.54.0
+requests==2.34.2
+psycopg2-binary==2.9.13
+psutil==7.2.2
+opentelemetry-sdk==1.45.2
+opentelemetry-exporter-otlp-proto-http==1.45.2
+opentelemetry-instrumentation-fastapi==0.66b2
+opentelemetry-instrumentation-requests==0.66b2
