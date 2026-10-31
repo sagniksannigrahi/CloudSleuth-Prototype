@@ -2,7 +2,7 @@
 
 **Early prototype for the Zeroth Review** of our final-year research project:
 
-> *CloudSleuth: Evidence-Based Root-Cause Analysis for Microservices, with Calibrated Confidence and an Independent Benchmark*
+> *CloudSleuth: Evidence-Based Root-Cause Analysis for Microservices, with Calibrated Confidence and an Independent Benchmark* 
 
 - Students: Sagnik Sannigrahi , Malik Inam Ul Haq
 - Batch B763, Dept. of Computing Technologies (CTECH), SRM IST Kattankulathur
