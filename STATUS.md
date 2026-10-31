@@ -57,6 +57,7 @@ Status as of the Zeroth Review. **BUILT** = working in this repo. **PLANNED** = 
 | Simple viewer (FastAPI, one HTML page) | BUILT | `viewer/app.py`, `viewer/index.html`; `make viewer` |
 | Offline demo without Docker / internet | BUILT | `make demo` |
 | Tests | BUILT | `tests/`; `make test` |
+| Results report from real runs | BUILT | [REPORT.md](REPORT.md), written by `evaluation/report.py`; `make report` |
 
 ## Planned (not built, on purpose)
 

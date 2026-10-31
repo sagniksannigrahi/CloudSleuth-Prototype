@@ -10,7 +10,7 @@ LIVE    := data/demo_app
 NAME    ?= db_lock
 DURATION ?= 120
 
-.PHONY: help check-python data eval story demo venv test viewer up down fault faults diagnose diagnose-nodb live-story live-cases live-eval ps logs clean
+.PHONY: help check-python data eval story demo venv test viewer up down fault faults diagnose diagnose-nodb live-story live-cases live-eval report ps logs clean
 
 help:
 	@echo "CloudSleuth-Zeroth-Prototype"
@@ -18,6 +18,7 @@ help:
 	@echo "Offline demo (no Docker, no internet, no installs):"
 	@echo "  make demo           generate simulator data, print the evaluation table, run the DB-lock story"
 	@echo "  make data | eval | story   the three steps of 'make demo' on their own"
+	@echo "  make report        re-run everything and write REPORT.md"
 	@echo ""
 	@echo "Viewer and tests (need a one-time pip install into .venv):"
 	@echo "  make test           run the pytest tests"
@@ -99,6 +100,10 @@ live-story: check-python
 
 live-cases:
 	@ls -1 "$(LIVE)/telemetry" 2>/dev/null | sed 's/.json$$//' || echo "no live cases yet"
+
+report: check-python
+	@test -d "$(SIM)/telemetry" || $(MAKE) --no-print-directory data
+	$(PYTHON) -m cloudsleuth_zeroth.evaluation.report
 
 live-eval: check-python
 	$(PYTHON) -m cloudsleuth_zeroth.evaluation.evaluate "$(LIVE)"
