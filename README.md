@@ -4,7 +4,7 @@
 
 > *CloudSleuth: Evidence-Based Root-Cause Analysis for Microservices, with Calibrated Confidence and an Independent Benchmark*
 
-- Students: Sagnik Sannigrahi (RA2311003011709), Malik Inam Ul Haq (RA2311003011727)
+- Students: Sagnik Sannigrahi , Malik Inam Ul Haq
 - Batch B763, Dept. of Computing Technologies (CTECH), SRM IST Kattankulathur
 - Guide: Dr. A. M. Vidhyalakshmi
 
